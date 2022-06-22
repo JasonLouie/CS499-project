@@ -6,9 +6,6 @@ text_color = "#A9A9A9"
 bg_bottom = "#686A68"
 bg_entry = "#2C3E50"
 
-user = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-user.connect(('68.237.86.46', 55555))
-
 class ChatClient:
     def __init__(self):
         self.runThread = True
@@ -77,7 +74,6 @@ class ChatClient:
         if not self.nickname and sender == "You":
             self.nickname = msg
             self.msg_to_send = msg
-            self.head_label
             self.sendMessage(f"Your username is: {self.nickname}", "")
             self.head_label.configure(text=f"Username: {self.nickname}")
             return
@@ -125,5 +121,10 @@ class ChatClient:
         self.clientWindow.destroy()
 
 if __name__ == '__main__':
-    chat_client = ChatClient()
-    chat_client.run()
+    try:
+        user = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        user.connect(('68.237.86.46', 55555))
+        chat_client = ChatClient()
+        chat_client.run()
+    except:
+        print("Server is not online. Try again later.")

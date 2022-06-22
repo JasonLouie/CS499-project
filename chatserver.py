@@ -3,10 +3,6 @@ import threading,socket,cv2
 host = socket.gethostbyname(socket.gethostname())
 port = 55555
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((host,port))
-server.listen()
-
 class User:
     def __init__(self, name, addr, connection):
         self.username = name
@@ -66,5 +62,7 @@ def receive():
 
         
 if __name__ == '__main__':
-    receive_thread = threading.Thread(target=receive)
-    receive_thread.start()
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((host,port))
+    server.listen()
+    receive()
