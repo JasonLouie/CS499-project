@@ -107,22 +107,17 @@ class ChatClient:
                 message = user.recv(1024).decode('ascii')
                 if message == 'NAME':
                     self.sendMessage("Enter a username: ", "")
-                else:
-                    if self.prev_msg != message:
-                        self.sendMessage(message, "")
+                elif self.prev_msg != message:
+                    self.sendMessage(message, "")
             except:
-                self.sendMessage("An error occurred!", "")
                 user.close()
                 break
 
     def write(self):
         while self.runThread:
-            self.prepareMessage()
-            
-    def prepareMessage(self):
-        if self.msg_to_send != "":
-            user.send(self.msg_to_send.encode('ascii'))
-            self.msg_to_send = ""
+            if self.msg_to_send != "":
+                user.send(self.msg_to_send.encode('ascii'))
+                self.msg_to_send = ""
     
     def quit(self):
         user.close()
