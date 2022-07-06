@@ -34,10 +34,19 @@ class ChatServer:
         self.server.bind((host,chatPort))
         self.server.listen()
         self.receive()
+    
+    def shutdown(self):
+        print("Shutting Down...")
+        self.server.close()
 
     def broadcast(self, message):
         for client in clients:
             client.getChatConnection().send(message)
+    
+    def sendMessage(self, message, user):
+        for client in clients:
+            if client.getChatConnection() != user:
+                client.getChatConnection().send(message)
 
     def handle(self, user, address):
         try:
@@ -56,7 +65,7 @@ class ChatServer:
         while True:
             try:
                 message = user.recv(1024)
-                self.broadcast(message)
+                self.sendMessage(message, user)
             except:
                 # remove the client that sends a failed message
                 clients.remove(newUser)
@@ -66,11 +75,14 @@ class ChatServer:
                 break
 
     def receive(self):
-        while True:
-            user, address = self.server.accept()
-            print(f"Connected with {str(address)}")
-            handleChat_thread = threading.Thread(target=self.handle, args=(user, address,))
-            handleChat_thread.start()
+        try:
+            while True:
+                user, address = self.server.accept()
+                print(f"Connected with {str(address)}")
+                handleChat_thread = threading.Thread(target=self.handle, args=(user, address,))
+                handleChat_thread.start()
+        except KeyboardInterrupt:
+            self.shutdown()
         
 if __name__ == '__main__':
     chat_server = ChatServer()

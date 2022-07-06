@@ -1,5 +1,4 @@
-from ctypes import sizeof
-import cv2, imutils, socket, numpy as np, time, base64, threading
+import socket, threading
 from tkinter import *
 
 buffer_size = 65536
@@ -24,11 +23,13 @@ class VideoServer:
         self.video_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, buffer_size)
         self.video_socket.bind((host_ip, videoPort))
         self.receive()
-        
+    
+    def shutdown(self):
+        self.video_socket.close()
+
     # Send video to all clients
 
-    # Old function for sending video was server generating the data to send to clients
-    # New function must be server receiving the data and forwarding it to the other clients
+    # Forwarding received data to the other clients
     def sendVideo(self, packet, sent_addr):
         if len(clients) >= 2:
             for client in clients:
@@ -38,17 +39,23 @@ class VideoServer:
                     except:
                         print("Removed client")
                         clients.remove(client)
-                    
-    # Receive video from a client 
+    
+    # Receive data from clients
     def receive(self):
         print(f"Listening for a connection...")
         while True:
-            msg, address = self.video_socket.recvfrom(buffer_size)
-            if msg.decode('ascii') == "First Time":
-                print(f"Connected to UDP video with {address}")
-                clients.append(User(address))
-            else:
-                self.sendVideo(msg, address)
+            try:
+                msg, address = self.video_socket.recvfrom(buffer_size)
+                # Cannot decode the jpg frames of video from client
+                try:
+                    if msg.decode('ascii') == "First Time":
+                        print(f"Connected to UDP video with {address}")
+                        clients.append(User(address))
+                except:
+                    self.sendVideo(msg, address)
+                    
+            except OSError as err:
+                print(err)
 
 if __name__ == '__main__':
     video_server = VideoServer()

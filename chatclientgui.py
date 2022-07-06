@@ -18,7 +18,6 @@ class ChatClient:
         self.clientWindow.protocol("WM_DELETE_WINDOW", self.quit)
         self.nickname = ""
         self.msg_to_send = ""
-        self.prev_msg = ""
         
         self.receive_thread = threading.Thread(target=self.receive)
         self.receive_thread.start()
@@ -89,7 +88,6 @@ class ChatClient:
             new_msg = f"{self.nickname}: {msg}"
             # Send message to server
             self.msg_to_send = new_msg
-            self.prev_msg = new_msg
             msg1 = f"{sender}: {msg}\n"
 
         # Must allow chat window to be configured temporarily when a new message is added
@@ -107,7 +105,7 @@ class ChatClient:
                 if message == 'NAME':
                     self.user_input.configure(state=NORMAL)
                     self.sendMessage("Enter a username", "")
-                elif self.prev_msg != message:
+                else:
                     self.sendMessage(message, "")
             except:
                 user.close()
