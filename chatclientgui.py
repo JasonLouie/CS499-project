@@ -5,6 +5,10 @@ bg_color = "#17202A"
 text_color = "#A9A9A9"
 bg_bottom = "#686A68"
 bg_entry = "#2C3E50"
+host_ip = '68.237.86.46'
+chatPort = 55555
+videoPort = 55666
+audioPort = 55777
 
 class ChatClient:
     def __init__(self):
@@ -28,7 +32,6 @@ class ChatClient:
         self.clientWindow.configure(width=470, height=550, bg=bg_color)
 
         # Header with user info
-
         self.head_label = Label(self.clientWindow, bg=bg_color, fg=text_color, text="Username:", pady=10)
         self.head_label.place(relwidth=1)
 
@@ -49,8 +52,8 @@ class ChatClient:
         # User input area
         self.user_input = Entry(bottom_label, bg=bg_entry, fg=text_color)
         self.user_input.place(relwidth=0.75, relheight=0.05, rely=0.01, relx=0.01)
-        self.user_input.focus()
         self.user_input.bind("<Return>", self.pressedEnter)
+        self.user_input.configure(state=DISABLED)
 
         # Button for sending
         send_button = Button(bottom_label, text="Send", width=20, bg=bg_bottom, command=lambda: self.pressedEnter(None))
@@ -102,7 +105,8 @@ class ChatClient:
             try:
                 message = user.recv(1024).decode('ascii')
                 if message == 'NAME':
-                    self.sendMessage("Enter a username: ", "")
+                    self.user_input.configure(state=NORMAL)
+                    self.sendMessage("Enter a username", "")
                 elif self.prev_msg != message:
                     self.sendMessage(message, "")
             except:
@@ -123,7 +127,7 @@ class ChatClient:
 if __name__ == '__main__':
     try:
         user = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        user.connect(('68.237.86.46', 55555))
+        user.connect((host_ip, chatPort))
         chat_client = ChatClient()
         chat_client.run()
     except:
