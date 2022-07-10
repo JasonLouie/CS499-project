@@ -1,5 +1,6 @@
 import threading,socket,cv2
 
+buffer_size = 65536
 host = socket.gethostbyname(socket.gethostname())
 chatPort = 55555
 videoPort = 55666
@@ -25,19 +26,24 @@ class User:
     def endConnection(self):
         self.chat_socket.close()
 
-class ChatServer:
+class Server:
     def __init__(self):
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.chat_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.video_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     
     def start(self):
-        print("Listening for TCP connections...")
-        self.server.bind((host,chatPort))
-        self.server.listen()
+        print("Listening for connections...")
+        self.chat_server.bind((host,chatPort))
+        self.chat_server.listen()
+
+        self.video_server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, buffer_size)
+        self.video_server.bind((host, videoPort))
         self.receive()
     
     def shutdown(self):
         print("Shutting Down...")
-        self.server.close()
+        self.chat_server.close()
+        self.video_server.close()
 
     def broadcast(self, message):
         for client in clients:
@@ -47,6 +53,29 @@ class ChatServer:
         for client in clients:
             if client.getChatConnection() != user:
                 client.getChatConnection().send(message)
+
+    def sendVideo(self, user, packet):
+        if len(clients) >= 2:
+            for client in clients:
+                if client.getAddress() != client.getAddress():
+                    self.video_server.sendto(packet, client.getAddress())
+    
+    def streamVideo(self, client):
+        while True:
+            packet,_ = self.video_server.recvfrom(buffer_size)
+            try:
+                word = packet.decode('ascii')
+                # Start streaming (sending packets) on keyword START
+                if word == "START":
+                    self.sendVideo(client, packet)
+                
+                # Stop transmission of packets on keyword END
+                elif word == "END":
+                    self.sendVideo(client, packet)
+                
+                
+            except:
+                self.sendVideo(client, packet)
 
     def handle(self, user, address):
         try:
@@ -61,6 +90,10 @@ class ChatServer:
             print("User disconnected before entering a username")
             user.close()
             return
+
+        # Create thread to handle video, then func
+        handleVideo_thread = threading.Thread(target=self.streamVideo,args=(newUser,))
+        handleVideo_thread.start()
 
         while True:
             try:
@@ -77,13 +110,14 @@ class ChatServer:
     def receive(self):
         try:
             while True:
-                user, address = self.server.accept()
+                user, address = self.chat_server.accept()
                 print(f"Connected with {str(address)}")
-                handleChat_thread = threading.Thread(target=self.handle, args=(user, address,))
-                handleChat_thread.start()
+                handleUser_thread = threading.Thread(target=self.handle, args=(user, address,))
+                handleUser_thread.start()
         except KeyboardInterrupt:
+            print("Shutting down...")
             self.shutdown()
         
 if __name__ == '__main__':
-    chat_server = ChatServer()
+    chat_server = Server()
     chat_server.start()

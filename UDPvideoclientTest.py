@@ -13,7 +13,7 @@ message = "First Time"
 
 class VideoClient:
     def __init__ (self):
-        self.video = cv2.VideoCapture(0)
+        self.video = cv2.VideoCapture('testvideo.mp4')
         self.runThread = True
         self.showVideo = False
         self.showPreview = False
@@ -22,7 +22,7 @@ class VideoClient:
         self.clientWindow.protocol("WM_DELETE_WINDOW", self.quit)
 
     def setupWindow(self):
-        self.clientWindow.title("Video Client")
+        self.clientWindow.title("Video Client Test")
         self.clientWindow.resizable(width=False, height=False)
         self.clientWindow.configure(width=400, height=400, bg=bg_color)
 
