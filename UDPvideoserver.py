@@ -26,6 +26,13 @@ class VideoServer:
     
     def shutdown(self):
         self.video_socket.close()
+    
+    def findClient(self, address):
+        for client in clients:
+            if client.getAddress() == address:
+                return client
+        
+        print("Client does not exist")
 
     # Send video to all clients
     def handleVideo(self):
@@ -37,6 +44,11 @@ class VideoServer:
                     print("Received END STREAM")
                     self.sendVideo("STOP".encode('ascii'), address)
                     break
+                elif packet.decode('ascii') == "BYE":
+                        # REMOVE CLIENT FROM LIST
+                        client = self.findClient(address)
+                        clients.remove(client)
+                        print(f"Removed client at {address}")
             except:
                 self.sendVideo(packet, address)
 
@@ -74,7 +86,11 @@ class VideoServer:
                     elif msg.decode('ascii') == "END":
                         # LET CLIENT KNOW TO CLOSE VIDEO WINDOW
                         self.sendVideo("STOP".encode('ascii'), address)
-
+                    elif msg.decode('ascii') == "BYE":
+                        # REMOVE CLIENT FROM LIST
+                        client = self.findClient(address)
+                        clients.remove(client)
+                        print(f"Removed client at {address}")
                 except:
                     self.sendVideo(msg, address)
                     

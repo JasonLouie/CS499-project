@@ -9,11 +9,14 @@ audioPort = 55777
 clients = []
 
 class User:
-    def __init__(self, name, addr, chat_connection):
+    def __init__(self, name, chat_connection):
         self.username = name
-        self.address = addr
         self.chat_socket = chat_connection
+        self.address = ""
     
+    def setAddress(self, addr):
+        self.address = addr
+
     def getUsername(self):
         return self.username
     
@@ -39,11 +42,12 @@ class Server:
         self.video_server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, buffer_size)
         self.video_server.bind((host, videoPort))
         self.receive()
+        self.videoReceiveServer()
     
     def shutdown(self):
         print("Shutting Down...")
         self.chat_server.close()
-        self.video_server.close()
+        # self.video_server.close()
 
     def broadcast(self, message):
         for client in clients:
@@ -53,46 +57,52 @@ class Server:
         for client in clients:
             if client.getChatConnection() != user:
                 client.getChatConnection().send(message)
+    
+    def findClient(self, username):
+        for client in clients:
+            if username == client.getUsername():
+                return client
+        
+        print("No client found")
 
-    def sendVideo(self, user, packet):
+    def sendVideo(self, addr, packet):
         if len(clients) >= 2:
             for client in clients:
-                if client.getAddress() != client.getAddress():
+                if client.getAddress() != addr:
                     self.video_server.sendto(packet, client.getAddress())
     
-    def streamVideo(self, client):
+    def streamVideo(self):
         while True:
-            packet,_ = self.video_server.recvfrom(buffer_size)
+            packet,addr = self.video_server.recvfrom(buffer_size)
             try:
-                word = packet.decode('ascii')
-                # Start streaming (sending packets) on keyword START
-                if word == "START":
-                    self.sendVideo(client, packet)
-                
-                # Stop transmission of packets on keyword END
-                elif word == "END":
-                    self.sendVideo(client, packet)
-                
-                
+                # End thread when user disconnects
+                msg = packet.decode('ascii')
+                if msg[0:6] == "FIRST:":
+                    client = self.findClient(msg[6:])
+                    client.setAddress(addr)
+                elif msg == "BYE":
+                    print("Thread ended")
+                    break
             except:
-                self.sendVideo(client, packet)
+                self.sendVideo(addr, packet)
 
     def handle(self, user, address):
         try:
             user.send('NAME'.encode('ascii'))
             username = user.recv(1024).decode('ascii')
-            newUser = User(username, address, user)
+            newUser = User(username, user)
             clients.append(newUser)
             print(f"Username of the client is {username}!")
             self.broadcast(f'{username} joined the chat!'.encode('ascii'))
-            user.send('Connected to the server!'.encode('ascii'))
+            user.send("Connected to the server!".encode('ascii'))
         except:
             print("User disconnected before entering a username")
             user.close()
             return
 
+        print("Handle video created")
         # Create thread to handle video, then func
-        handleVideo_thread = threading.Thread(target=self.streamVideo,args=(newUser,))
+        handleVideo_thread = threading.Thread(target=self.streamVideo)
         handleVideo_thread.start()
 
         while True:
@@ -117,6 +127,18 @@ class Server:
         except KeyboardInterrupt:
             print("Shutting down...")
             self.shutdown()
+
+    def videoReceiveServer(self):
+        while True:
+            packet,addr = self.video_server.recvfrom(buffer_size)
+            try:
+                # End thread when user disconnects
+                msg = packet.decode('ascii')
+                if msg[0:6] == "FIRST:":
+                    client = self.findClient(msg[6:])
+                    client.setAddress(addr)
+            except:
+                self.sendVideo(addr, packet)
         
 if __name__ == '__main__':
     chat_server = Server()

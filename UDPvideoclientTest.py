@@ -54,6 +54,9 @@ class VideoClient:
         self.clientWindow.mainloop()
 
     def quit(self):
+        time.sleep(1)
+        # Wait before sending
+        socket_vid.sendto("BYE".encode('ascii'), (host_ip, port))
         socket_vid.close()
         self.video.release()
         self.runThread = False
