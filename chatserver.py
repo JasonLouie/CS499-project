@@ -1,4 +1,4 @@
-import threading,socket,cv2
+import threading,socket
 
 buffer_size = 65536
 host = socket.gethostbyname(socket.gethostname())
@@ -100,7 +100,6 @@ class Server:
             user.close()
             return
 
-        print("Handle video created")
         # Create thread to handle video, then func
         handleVideo_thread = threading.Thread(target=self.streamVideo)
         handleVideo_thread.start()
@@ -132,7 +131,6 @@ class Server:
         while True:
             packet,addr = self.video_server.recvfrom(buffer_size)
             try:
-                # End thread when user disconnects
                 msg = packet.decode('ascii')
                 if msg[0:6] == "FIRST:":
                     client = self.findClient(msg[6:])
