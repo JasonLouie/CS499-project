@@ -229,7 +229,7 @@ class ChatClient:
             while self.showVideo:
                 if not doneStreaming:
                     self.user_chat.send("STARTVID".encode('ascii'))
-                doneStreaming = True
+                    doneStreaming = True
                 _,frame = self.video.read()
                 frame = imutils.resize(frame,width=WIDTH)
                 encoded,buffer = cv2.imencode('.jpg',frame)
