@@ -273,6 +273,9 @@ class ChatClient:
         self.user_chat.close()
         self.user_vid.sendto("BYE".encode('ascii'), (host_ip, videoPort))
         self.user_vid.close()
+        self.showPreview = False
+        self.showVideo = False
+        cv2.destroyAllWindows()
         self.runThread = False
         self.clientWindow.destroy()
 
