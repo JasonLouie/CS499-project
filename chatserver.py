@@ -42,7 +42,7 @@ class Server:
         self.video_server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, buffer_size)
         self.video_server.bind((host, videoPort))
         self.receive()
-        self.videoReceiveServer()
+        self.videoReceive()
     
     def shutdown(self):
         print("Shutting Down...")
@@ -70,21 +70,6 @@ class Server:
             for client in clients:
                 if client.getAddress() != addr:
                     self.video_server.sendto(packet, client.getAddress())
-    
-    def streamVideo(self):
-        while True:
-            packet,addr = self.video_server.recvfrom(buffer_size)
-            try:
-                # End thread when user disconnects
-                msg = packet.decode('ascii')
-                if msg[0:6] == "FIRST:":
-                    client = self.findClient(msg[6:])
-                    client.setAddress(addr)
-                elif msg == "BYE":
-                    print("Thread ended")
-                    break
-            except:
-                self.sendVideo(addr, packet)
 
     def handle(self, user, address):
         try:
@@ -101,7 +86,7 @@ class Server:
             return
 
         # Create thread to handle video, then func
-        handleVideo_thread = threading.Thread(target=self.streamVideo)
+        handleVideo_thread = threading.Thread(target=self.videoReceive)
         handleVideo_thread.start()
 
         while True:
@@ -127,15 +112,21 @@ class Server:
             print("Shutting down...")
             self.shutdown()
 
-    def videoReceiveServer(self):
+    def videoReceive(self):
         while True:
             packet,addr = self.video_server.recvfrom(buffer_size)
             try:
                 msg = packet.decode('ascii')
+                # Update address of client for streaming video
                 if msg[0:6] == "FIRST:":
                     client = self.findClient(msg[6:])
                     client.setAddress(addr)
+                # End thread when user disconnects
+                elif msg == "BYE":
+                    print("Thread ended")
+                    break
             except:
+                # If packet cannot be decoded with ascii it is encoded as jpg
                 self.sendVideo(addr, packet)
         
 if __name__ == '__main__':

@@ -270,11 +270,16 @@ class ChatClient:
     
     # Handles closing client (closes all threads and sockets)
     def quit(self):
+        if self.showVideo:
+            self.user_chat.send("ENDVID".encode('ascii'))
+        if self.showPreview:
+            self.showPreview = False
+            cv2.destroyWindow("Preview of Video")
+        if self.canDisplay:
+            self.canDisplay = False
         self.user_chat.close()
         self.user_vid.sendto("BYE".encode('ascii'), (host_ip, videoPort))
         self.user_vid.close()
-        self.showPreview = False
-        self.showVideo = False
         cv2.destroyAllWindows()
         self.runThread = False
         self.clientWindow.destroy()
