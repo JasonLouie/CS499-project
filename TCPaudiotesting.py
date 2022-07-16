@@ -1,4 +1,4 @@
-import pyaudio, socket, threading, wave, simpleaudio as sa
+import pyaudio, socket, threading, simpleaudio as sa
 from tkinter import *
 
 # Testing pyaudio along with recording and playing audio from microphone

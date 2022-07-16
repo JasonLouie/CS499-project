@@ -1,4 +1,4 @@
-import pyaudio, socket, threading, wave, time, asyncio
+import pyaudio, socket, threading
 from tkinter import *
 
 bg_color = "#17202A"
