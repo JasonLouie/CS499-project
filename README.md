@@ -12,4 +12,5 @@ pip install tk
 pip install imutils
 pip install sockets
 pip install threaded
-pip install wave
+pip install PyAudio
+pip install numpy
