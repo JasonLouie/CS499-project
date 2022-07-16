@@ -85,6 +85,7 @@ class ChatClient:
             self.connect()
         except:
             print("Servers are down. Try again later.")
+            self.quit()
 
         self.receive_thread = threading.Thread(target=self.receiveChat)
         self.receive_thread.start()
