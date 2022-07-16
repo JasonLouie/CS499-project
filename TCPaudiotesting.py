@@ -1,4 +1,4 @@
-import pyaudio, socket, threading
+import pyaudio, threading
 from tkinter import *
 
 # Testing pyaudio along with recording and playing audio from microphone
@@ -7,8 +7,6 @@ bg_color = "#17202A"
 text_color = "#A9A9A9"
 bg_bottom = "#686A68"
 bg_entry = "#2C3E50"
-audioPort = 55777
-host = socket.gethostbyname(socket.gethostname())
 # audio will be in chunks of 1024 sample
 chunk = 1024
 # 16 bits per sample
@@ -23,15 +21,10 @@ filename = "audio_output.wav"
 
 class Audio:
     def __init__(self):
-        self.audioSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.clientWindow = Tk()
         self.shareAudio = False
         self.runThread = True
         self.setupWindow()
-    
-    def start(self):
-        self.audioSocket.bind((host,audioPort))
-        self.audioSocket.listen()
     
     def setupWindow(self):
         self.clientWindow.protocol("WM_DELETE_WINDOW", self.quit)
