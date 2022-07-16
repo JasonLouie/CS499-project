@@ -79,7 +79,6 @@ class AudioClient:
                 stream.close()
     
     def playAudio(self, data):
-        print("Played")
         stream = self.p.open(format=audio_format, channels=channels, rate=fs, frames_per_buffer=chunk,output=True)
         stream.write(data)
         stream.stop_stream()
@@ -109,17 +108,3 @@ class AudioClient:
 if __name__ == '__main__':
     audio = AudioClient()
     audio.run()
-
-
-# receive audio bytes
-# play audio sound
-# if current stream is blocked, create a new one and play audio there, and so forth. End and close stream when done
-# stream.write()
-
-# POSSIBLE WAY:
-
-# Receive thread only receives audio bytes
-# Constantly check for changes in a variable that holds the byte
-# On change, create a thread and run it to play audio
-
-# ISSUE: audio is delayed and continues to add delay as more input is recorded and sent
