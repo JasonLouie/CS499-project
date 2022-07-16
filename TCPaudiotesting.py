@@ -70,9 +70,7 @@ class Audio:
                 # frames = []
                 # Store data in chunks for as long as audio is shared
                 while self.shareAudio:
-                    data=b""
-                    for i in range(0, int(fs / chunk * seconds)):
-                        data+= stream1.read(chunk)
+                    data= stream1.read(chunk)
                     stream2.write(data)
                     # frames.append(data)
         
