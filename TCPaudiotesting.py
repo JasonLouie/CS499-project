@@ -1,4 +1,4 @@
-import pyaudio, socket, threading, simpleaudio as sa
+import pyaudio, socket, threading
 from tkinter import *
 
 # Testing pyaudio along with recording and playing audio from microphone
@@ -93,11 +93,6 @@ class Audio:
                 # wf.close()
 
                 # self.playAudio()
-    # Play recorded audio from filename
-    def playAudio(self):
-        wave_obj = sa.WaveObject.from_wave_file(filename)
-        play_obj = wave_obj.play()
-        play_obj.wait_done()
     
 
 if __name__ == '__main__':
