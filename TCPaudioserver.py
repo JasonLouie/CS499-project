@@ -1,4 +1,4 @@
-import pyaudio, socket, threading, wave, simpleaudio as sa
+import pyaudio, socket, threading
 from tkinter import *
 
 audioPort = 55777
