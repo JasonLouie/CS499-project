@@ -11,7 +11,7 @@ bg_entry = "#2C3E50"
 chunk = 1024
 # 16 bits per sample
 audio_format = pyaudio.paInt16
-channels = 2
+channels = 1
 # Record at 44100 samples per second
 fs = 44100
 # Number of seconds to record

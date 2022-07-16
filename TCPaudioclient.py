@@ -11,7 +11,7 @@ host_ip = '68.237.86.46'
 chunk = 1024
 # 16 bits per sample
 audio_format = pyaudio.paInt16
-channels = 2
+channels = 1
 # Record at 44100 samples per second
 fs = 44100
 # Number of seconds to record (Send audio every 0.25 sec)
