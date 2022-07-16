@@ -7,6 +7,8 @@ On git bash do the following steps:
 2. python -m venv venv
 3. source venv/Scripts/activate
 
+pip install virtualenv
+python -m venv venv
 pip install opencv-python
 pip install tk
 pip install imutils
