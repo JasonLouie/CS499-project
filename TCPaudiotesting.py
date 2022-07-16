@@ -50,6 +50,7 @@ class Audio:
     def quit(self):
         self.clientWindow.destroy()
         self.runThread = False
+        self.shareAudio = False
     
     # Toggle audio
     def allowAudio(self):
