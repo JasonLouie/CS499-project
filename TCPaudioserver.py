@@ -28,14 +28,17 @@ class User:
 
 class AudioServer:
     def __init__(self):
+        # TCP Socket for audio streaming server
         self.audio_server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     
+    # Start TCP audio server
     def start(self):
         print("Listening for connections...")
         self.audio_server.bind((host,audioPort))
         self.audio_server.listen()
         self.receiveAudio()
     
+    # Send audio packets to all clients except sender
     def sendAudio(self, audio, user):
         for client in clients:
             if client.getAudioSocket() != user:
@@ -44,6 +47,7 @@ class AudioServer:
                 except:
                     print("Error has occurred")
     
+    # Handles audio from client
     def handleAudio(self, user, address):
         try:
             user.send("Hello".encode('ascii'))
@@ -66,7 +70,7 @@ class AudioServer:
                 print(f"{address} disconnected.")
                 break
 
-
+    # Handle users joining server
     def receiveAudio(self):
         while True:
             user, address = self.audio_server.accept()

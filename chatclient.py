@@ -1,4 +1,4 @@
-import cv2, imutils, socket, numpy as np, time, threading
+import cv2, imutils, socket, numpy as np, time, threading, pyaudio
 from tkinter import *
 
 bg_color = "#17202A"
@@ -10,13 +10,26 @@ chatPort = 55555
 videoPort = 55666
 audioPort = 55777
 buffer_size = 65536
+# audio will be in chunks of 1024 sample
+chunk = 1024
+# 16 bits per sample
+audio_format = pyaudio.paInt16
+channels = 1
+# Record at 44100 samples per second
+fs = 44100
+# Number of seconds to record (Send audio every 0.25 sec)
+seconds = 0.25
 
 class ChatClient:
     def __init__(self):
+        # PortAudio interface
+        self.p = pyaudio.PyAudio()
         # Chat socket (TCP)
         self.user_chat = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Video socket (UDP)
         self.user_vid = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # Audio socket (TCP)
+        self.user_audio = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
         self.shareAudio = False
         self.showVideo = False
@@ -47,7 +60,7 @@ class ChatClient:
         # Stream video
         self.send_video = Button(self.clientWindow, text="Share Video", width=40, bg=bg_bottom, command=self.shareVideo)
         self.send_video.place(relx=0.79, rely=0.27, relheight=0.07, relwidth=0.18)
-        self.send_video.configure(state=DISABLED, text="Share Video", fg=text_color)
+        self.send_video.configure(state=DISABLED, text="Share Video")
 
         # Display preview
         self.show_preview = Button(self.clientWindow, text="Show Preview", width=40, bg=bg_bottom, command=self.allowPreview)
@@ -56,6 +69,10 @@ class ChatClient:
         # Stream audio
         # self.send_audio = Button(self.clientWindow, text="Mic Off", width=40, bg=bg_bottom, command=self.allowAudio)
         # self.send_audio.place(relx=0.79, rely=0.49, relheight=0.07, relwidth=0.18)
+
+        self.send_audio = Button(self.clientWindow, text="Start Speaking", width=40, bg=bg_bottom, command=self.allowAudio)
+        self.send_audio.place(relx=0.79, rely=0.49, relheight=0.07, relwidth=0.18)
+        self.send_audio.configure(state=DISABLED, text="Start Speaking")
 
         # Scrollbar
         scrollbar = Scrollbar(self.chat_window)
@@ -76,13 +93,13 @@ class ChatClient:
         send_button = Button(bottom_label, text="Send", width=20, bg=bg_bottom, command=lambda: self.pressedEnter(None))
         send_button.place(relx=0.7, rely=0.01, relheight=0.05, relwidth=0.2)
     
-    def connect(self):
+    def connectToServer(self):
         self.user_chat.connect((host_ip, chatPort))
         self.user_vid.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, buffer_size)
 
     def run(self):
         try:
-            self.connect()
+            self.connectToServer()
         except:
             print("Servers are down. Try again later.")
             self.quit()
@@ -138,6 +155,21 @@ class ChatClient:
             self.msg_to_send = msg
             self.sendMessage(f"Your username is: {self.username}", "")
             self.head_label.configure(text=f"Username: {self.username}")
+            try:
+                self.user_audio.connect((host_ip, audioPort))
+                if self.user_audio.recv(1024).decode('ascii') == "Hello":
+                    self.user_audio.send(f"Joined:{self.username}".encode('ascii'))
+
+                    recordAudio = threading.Thread(target=self.record)
+                    recordAudio.start()
+
+                    hearAudioThread = threading.Thread(target=self.receiveAudio)
+                    hearAudioThread.start()
+
+                    self.send_audio.configure(state=NORMAL)
+                    self.clientWindow.mainloop()
+            except:
+                print("Audio server is offline try again later...")
             return
 
         # Format message
@@ -284,6 +316,60 @@ class ChatClient:
                 pass
 
     #### END OF FUNCTIONS FOR UDP VIDEO STREAMING ####
+
+    #### FUNCTIONS FOR AUDIO CHAT ####
+
+    # Toggle audio
+    def allowAudio(self):
+        self.shareAudio = not self.shareAudio
+        if not self.shareAudio:
+            self.send_audio['text'] = 'Start Speaking'
+        else:
+            self.send_audio['text'] = 'Stop Speaking'
+    
+    # Record audio from microphone
+    def record(self):
+        while self.runThread:
+            if self.shareAudio:
+                print("Recording")
+                stream = self.p.open(format=audio_format, channels=channels, rate=fs, frames_per_buffer=chunk, input=True)
+                while self.shareAudio:
+                    data = stream.read(chunk)
+                    self.user_audio.sendall(data)
+                
+                print("Stopped recording")
+                # Stop and close the stream
+                stream.stop_stream()
+                stream.close()
+    
+    # Plays received audio
+    def playAudio(self, data):
+        p = pyaudio.PyAudio()
+        stream = p.open(format=audio_format, channels=channels, rate=fs, frames_per_buffer=chunk,output=True)
+        stream.write(data)
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+
+    # Receives audio packets from server
+    def receiveAudio(self):
+        while self.runThread:
+            # Every 0.25 seconds audio will be played
+            data=b""
+            for i in range(0, int(fs / chunk * seconds)):
+                try:
+                    data+=self.user_audio.recv(1024*8)
+                except:
+                    if data != b"":
+                        thread = threading.Thread(target=self.playAudio,args=(data,))
+                        thread.start()
+            # Plays the audio after 0.25 seconds on a separate thread
+            # Client will still receive audio while previous audio plays
+            # These threads terminate after audio is played
+            thread = threading.Thread(target=self.playAudio,args=(data,))
+            thread.start()
+    
+    #### END OF AUDIO CHAT FUNCTIONS ####
     
     # Handles closing client (closes all threads and sockets)
     def quit(self):
@@ -297,6 +383,11 @@ class ChatClient:
                 print("Already closed preview")
         if self.canDisplay:
             self.canDisplay = False
+        self.user_audio.close()
+        self.runThread = False
+        self.shareAudio = False
+        # Terminate PortAudio interface
+        self.p.terminate()    
         self.user_chat.close()
         self.user_vid.sendto("BYE".encode('ascii'), (host_ip, videoPort))
         self.user_vid.close()

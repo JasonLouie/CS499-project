@@ -1,3 +1,5 @@
+# Final implementation of chatserver with audio and video streaming as well as text messaging
+
 import threading,socket
 
 host = socket.gethostbyname(socket.gethostname())
@@ -12,10 +14,14 @@ class User:
     def __init__(self, name, text_socket):
         self.username = name
         self.text_socket = text_socket
+        self.audio_socket = socket.socket()
         self.address = ""
     
     def setAddress(self, addr):
         self.address = addr
+    
+    def setAudioSocket(self, audioSocket):
+        self.audio_socket =audioSocket
 
     def getUsername(self):
         return self.username
@@ -26,13 +32,21 @@ class User:
     def getTextSocket(self):
         return self.text_socket
     
-    def endConnection(self):
+    def getAudioSocket(self):
+        return self.audio_socket
+    
+    def endAudio(self):
+        self.audio_socket.close()
+    
+    def endText(self):
         self.text_socket.close()
 
 class Server:
     def __init__(self):
         # TCP socket for text message server
         self.text_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # TCP Socket for audio streaming server
+        self.audio_server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         # UDP socket for video streaming server
         self.video_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     
@@ -42,13 +56,22 @@ class Server:
         self.text_server.bind((host,chatPort))
         self.text_server.listen()
 
+        self.audio_server.bind((host,audioPort))
+        self.audio_server.listen()
+
         # Change buffer size for UDP socket so that the particular resolution of jpg packets can be sent
         self.video_server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, buffer_size)
         self.video_server.bind((host, videoPort))
 
-        # Handle packets of data for receiving video data within the UDP Server
+        # Handle packets of data for receiving video stream within the UDP Server
         handleVideo_thread = threading.Thread(target=self.videoReceive)
         handleVideo_thread.start()
+
+        # Handle packets of data for receiving audio stream
+        handleAudio_thread = threading.Thread(target=self.receiveAudio)
+        handleAudio_thread.start()
+
+        # Handle packets of data for receiving text messages
         self.receive()
     
     # Shutdown server
@@ -86,7 +109,7 @@ class Server:
                     self.video_server.sendto(packet, client.getAddress())
     
     # Function for handling a new user
-    def handle(self, user, address):
+    def handle(self, user):
         # Attempt to assign a username to a new user
         try:
             user.send('NAME'.encode('ascii'))
@@ -116,7 +139,7 @@ class Server:
             # This is when the client terminates its socket, thus terminating its connection to the server
             except:
                 clients.remove(newUser)
-                newUser.endConnection()
+                newUser.endText()
                 self.broadcast(f'{newUser.getUsername()} left the chat!'.encode('ascii'))
                 print(f'{newUser.getUsername()} left the chat!')
                 break
@@ -126,8 +149,8 @@ class Server:
         try:
             while True:
                 user, address = self.text_server.accept()
-                print(f"Connected with {str(address)}")
-                handleUser_thread = threading.Thread(target=self.handle, args=(user, address,))
+                print(f"Connected to text chat server with {str(address)}")
+                handleUser_thread = threading.Thread(target=self.handle, args=(user,))
                 handleUser_thread.start()
         except KeyboardInterrupt:
             print("Shutting down...")
@@ -157,6 +180,46 @@ class Server:
             # If packet cannot be decoded with ascii it is encoded as jpg and can be sent to other clients
             except:
                 self.sendVideo(addr, packet)
+    
+    # Send audio packets to all clients except sender
+    def sendAudio(self, audio, user):
+        for client in clients:
+            if client.getAudioSocket() != user:
+                try:
+                    client.getAudioSocket().send(audio)
+                except:
+                    print("Error has occurred")
+    
+    # Handles audio from client
+    def handleAudio(self, user, address):
+        try:
+            user.send("Hello".encode('ascii'))
+            msg = user.recv(1024).decode('ascii')
+            if msg[0:7] == "Joined:":
+                client = self.findClient(msg[7:])
+                client.setAudioSocket(user)
+        except:
+            print("Connection error")
+            user.close()
+            return
+
+        while True:
+            try:
+                audio = user.recv(1024*8)
+                self.sendAudio(audio, user)
+            except:
+                # remove the client that sends a failed message
+                user.close()
+                print(f"{address} disconnected from audio server.")
+                break
+
+    # Handle users joining server
+    def receiveAudio(self):
+        while True:
+            user, address = self.audio_server.accept()
+            print(f"Connected to audio server with {str(address)}")
+            handleAudio_thread = threading.Thread(target=self.handleAudio, args=(user, address,))
+            handleAudio_thread.start()
         
 if __name__ == '__main__':
     server = Server()

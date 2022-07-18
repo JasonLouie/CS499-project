@@ -16,7 +16,6 @@ channels = 1
 fs = 44100
 # Number of seconds to record (Send audio every 0.25 sec)
 seconds = 0.25
-filename = "audio_output.wav"
 
 class AudioClient:
     def __init__(self):
@@ -77,12 +76,16 @@ class AudioClient:
                 stream.stop_stream()
                 stream.close()
     
+    # Plays received audio
     def playAudio(self, data):
-        stream = self.p.open(format=audio_format, channels=channels, rate=fs, frames_per_buffer=chunk,output=True)
+        p = pyaudio.PyAudio()
+        stream = p.open(format=audio_format, channels=channels, rate=fs, frames_per_buffer=chunk,output=True)
         stream.write(data)
         stream.stop_stream()
         stream.close()
+        p.terminate()
 
+    # Receives audio packets from server
     def receiveAudio(self):
         while self.runThread:
             data=b""
