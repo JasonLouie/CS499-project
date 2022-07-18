@@ -67,8 +67,7 @@ class AudioClient:
         while self.runThread:
             if self.shareAudio:
                 print("Recording")
-                p = pyaudio.PyAudio()
-                stream = p.open(format=audio_format, channels=channels, rate=fs, frames_per_buffer=chunk, input=True)
+                stream = self.p.open(format=audio_format, channels=channels, rate=fs, frames_per_buffer=chunk, input=True)
                 while self.shareAudio:
                     data = stream.read(chunk)
                     self.user_audio.sendall(data)
@@ -89,7 +88,7 @@ class AudioClient:
             data=b""
             for i in range(0, int(fs / chunk * seconds)):
                 try:
-                    data +=self.user_audio.recv(1024*8)
+                    data+=self.user_audio.recv(1024*8)
                 except:
                     if data != b"":
                         thread = threading.Thread(target=self.playAudio,args=(data,))

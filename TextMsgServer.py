@@ -1,0 +1,97 @@
+import threading, socket
+
+host = socket.gethostbyname(socket.gethostname())
+chatPort = 55555
+
+clients = []
+
+class User:
+    def __init__(self, name, text_socket):
+        self.username = name
+        self.text_socket = text_socket
+
+    def getUsername(self):
+        return self.username
+    
+    def getTextSocket(self):
+        return self.text_socket
+    
+    def endConnection(self):
+        self.text_socket.close()
+
+class Server:
+    def __init__(self):
+        # TCP socket for text message server
+        self.text_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    
+    # Start server
+    def start(self):
+        print("Listening for connections...")
+        self.text_server.bind((host,chatPort))
+        self.text_server.listen()
+        self.receive()
+    
+    # Shutdown server
+    def shutdown(self):
+        print("Shutting Down...")
+        self.text_server.close()
+
+    # Send a message to all clients
+    def broadcast(self, message):
+        for client in clients:
+            client.getTextSocket().send(message)
+    
+    # Send a message to all but a specified client
+    # Called whenever a user sends a message to prevent receiving a repeated message
+    def sendMessage(self, message, user):
+        for client in clients:
+            if client.getTextSocket() != user:
+                client.getTextSocket().send(message)
+
+    # Function for handling a new user
+    def handle(self, user):
+        # Attempt to assign a username to a new user
+        try:
+            user.send('NAME'.encode('ascii'))
+            username = user.recv(1024).decode('ascii')
+            newUser = User(username, user)
+            clients.append(newUser)
+            print(f"Username of the client is {username}!")
+            self.broadcast(f'{username} joined the chat!'.encode('ascii'))
+            user.send("Connected to the server!".encode('ascii'))
+        # If a nickname was not received by the server, they disconnected before entering a username
+        except:
+            print("User disconnected before entering a username")
+            user.close()
+            return
+
+        # Manage sending and receiving messages from a specific user
+        while True:
+            # Receive message and send it to all users while ensuring the user does not receive the repeated message
+            try:
+                message = user.recv(1024)
+                self.sendMessage(message, user)
+            # Remove the client that sends a failed message
+            # This is when the client terminates its socket, thus terminating its connection to the server
+            except:
+                clients.remove(newUser)
+                newUser.endConnection()
+                self.broadcast(f'{newUser.getUsername()} left the chat!'.encode('ascii'))
+                print(f'{newUser.getUsername()} left the chat!')
+                break
+
+    # Function for accepting new clients into the TCP text server
+    def receive(self):
+        try:
+            while True:
+                user, address = self.text_server.accept()
+                print(f"Connected with {str(address)}")
+                handleUser_thread = threading.Thread(target=self.handle, args=(user,))
+                handleUser_thread.start()
+        except KeyboardInterrupt:
+            print("Shutting down...")
+            self.shutdown()
+        
+if __name__ == '__main__':
+    server = Server()
+    server.start()
