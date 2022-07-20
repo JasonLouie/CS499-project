@@ -1,9 +1,11 @@
 import pyaudio, socket, threading
 from tkinter import *
 
-audioPort = 55777
-host = socket.gethostbyname(socket.gethostname())
-# audio will be in chunks of 1024 sample
+# socket.gethostbyname(socket.gethostname())
+# The above line of code receives the ipv4 address of the client that this program is running on.
+# I had to change it to 192.168.1.171 since the line of code above started returning the wrong ipv4 address
+# This assumes that the server is being ran on my computer.
+host = '192.168.1.171'
 chunk = 1024
 # 16 bits per sample
 audio_format = pyaudio.paInt16
@@ -12,7 +14,7 @@ channels = 1
 fs = 44100
 # Number of seconds to record
 seconds = 0.25
-filename = "audio_output.wav"
+audioPort = 55777
 
 clients = []
 
@@ -33,7 +35,7 @@ class AudioServer:
     
     # Start TCP audio server
     def start(self):
-        print("Listening for connections...")
+        print(f"Listening for connections at {host}...")
         self.audio_server.bind((host,audioPort))
         self.audio_server.listen()
         self.receiveAudio()

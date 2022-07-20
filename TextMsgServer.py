@@ -1,6 +1,10 @@
 import threading, socket
 
-host = socket.gethostbyname(socket.gethostname())
+# socket.gethostbyname(socket.gethostname())
+# The above line of code receives the ipv4 address of the client that this program is running on.
+# I had to change it to 192.168.1.171 since the line of code above started returning the wrong ipv4 address
+# This assumes that the server is being ran on my computer.
+host = '192.168.1.171'
 chatPort = 55555
 
 clients = []
@@ -26,7 +30,7 @@ class Server:
     
     # Start server
     def start(self):
-        print("Listening for connections...")
+        print(f"Listening for connections at {host}...")
         self.text_server.bind((host,chatPort))
         self.text_server.listen()
         self.receive()
