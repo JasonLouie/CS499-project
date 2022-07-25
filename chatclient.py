@@ -155,21 +155,6 @@ class ChatClient:
             self.msg_to_send = msg
             self.sendMessage(f"Your username is: {self.username}", "")
             self.head_label.configure(text=f"Username: {self.username}")
-            try:
-                self.user_audio.connect((host_ip, audioPort))
-                if self.user_audio.recv(1024).decode('ascii') == "Hello":
-                    self.user_audio.send(f"Joined:{self.username}".encode('ascii'))
-
-                    recordAudio = threading.Thread(target=self.record)
-                    recordAudio.start()
-
-                    hearAudioThread = threading.Thread(target=self.receiveAudio)
-                    hearAudioThread.start()
-
-                    self.send_audio.configure(state=NORMAL)
-                    self.clientWindow.mainloop()
-            except:
-                print("Audio server is offline try again later...")
             return
 
         # Format message
@@ -204,9 +189,25 @@ class ChatClient:
                 elif message == 'ENDVID':
                     self.canDisplay = False
                 # Enable video streaming button and send a packet of data to allow server to obtain the client's return address
+                # Also enable audio streaming button and send data to allow server to update client's TCP audio socket on server's side
                 elif message == "Connected to the server!":
                     self.send_video.configure(state=NORMAL)
                     self.user_vid.sendto(f"FIRST:{self.username}".encode('ascii'), (host_ip, videoPort))
+                    try:
+                        self.user_audio.connect((host_ip, audioPort))
+                        if self.user_audio.recv(1024).decode('ascii') == "Hello":
+                            self.user_audio.send(f"Joined:{self.username}".encode('ascii'))
+
+                            recordAudio = threading.Thread(target=self.record)
+                            recordAudio.start()
+
+                            hearAudioThread = threading.Thread(target=self.receiveAudio)
+                            hearAudioThread.start()
+
+                            self.send_audio.configure(state=NORMAL)
+                            self.clientWindow.mainloop()
+                    except:
+                        print("Audio server is offline try again later...")
                 # Call self.sendMessage to update the chat
                 else:
                     self.sendMessage(message, "")
