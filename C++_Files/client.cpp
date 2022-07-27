@@ -13,6 +13,7 @@
 #define NUM_COLORS 6
 using namespace std;
 
+int chatPort = 55555;
 bool exit_flag=false;
 thread t_send, t_recv;
 int client_socket;
@@ -35,7 +36,7 @@ int main()
 
 	struct sockaddr_in client;
 	client.sin_family=AF_INET;
-	client.sin_port=htons(10000); // Port no. of server
+	client.sin_port=htons(chatPort); // Port no. of server
 	client.sin_addr.s_addr=INADDR_ANY;
 	bzero(&client.sin_zero,0);
 
@@ -46,7 +47,7 @@ int main()
 	}
 	signal(SIGINT, catch_ctrl_c);
 	char name[MAX_LEN];
-	cout<<"Enter your name : ";
+	cout << "Enter a username: ";
 	cin.getline(name,MAX_LEN);
 	send(client_socket,name,sizeof(name),0);
 
