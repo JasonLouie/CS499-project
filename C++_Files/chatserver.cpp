@@ -99,11 +99,3 @@ int main(int argc, char *argv[])
 	cout << "Connection closed..." << endl;
 	return 0;
 }
-
-
-/*
-
-git config --global user.email jason.louie29@myhunter.cuny.edu
-git config --global user.name JasonLouie
-
-/*
